@@ -99,8 +99,8 @@ func DeleteNotesWithId(todos *[]Note, id int) error {
 	return nil
 }
 
-func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+func setupRouter() {
+	notesHandler := func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "GET":
 			data, err := ReadData()
@@ -124,13 +124,6 @@ func main() {
 				fmt.Fprintf(w, "Failed to write to data.json: %s", err.Error())
 			}
 			Response(w, []byte("Successfully wrote data"), "text", http.StatusCreated)
-		default:
-			Response(w, []byte(fmt.Sprintf("Method %s not supported", r.Method)), "text", http.StatusMethodNotAllowed)
-		}
-	})
-
-	http.HandleFunc("/notes/", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
 		case "PUT":
 			id, err := strconv.Atoi(strings.TrimPrefix(r.URL.Path, "/notes/"))
 			if err != nil {
@@ -168,10 +161,19 @@ func main() {
 		default:
 			Response(w, []byte(fmt.Sprintf("Method %s not supported", r.Method)), "text", http.StatusMethodNotAllowed)
 		}
-	})
+	}
+	router := Router{}
+	router.AddHandler("/notes/", notesHandler)
+}
 
-	err := http.ListenAndServe(":8080", nil)
+func launchServer(address string) {
+	err := http.ListenAndServe(address, nil)
 	if err != nil {
 		fmt.Printf("http server crashed: %s", err.Error())
 	}
+}
+
+func main() {
+	setupRouter()
+	launchServer(":8080")
 }
